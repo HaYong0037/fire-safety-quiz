@@ -41,7 +41,16 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:10px}
 <div class="settings" style="grid-template-columns:repeat(2,1fr)">
 <div class="field"><label>電子郵件</label><input id="authEmail" type="email" placeholder="name@example.com"></div>
 <div class="field"><label>密碼</label><input id="authPassword" type="password" placeholder="至少 6 碼"></div></div>
-<div class="actions"><button class="btn" id="registerBtn">註冊帳號</button><button class="btn secondary" id="loginBtn">登入</button><button class="btn secondary hidden" id="logoutBtn">登出</button></div>
+<div class="actions"><button class="btn" id="registerBtn">註冊帳號</button><button class="btn secondary" id="loginBtn">登入</button><button class="btn secondary" id="forgotBtn">忘記密碼</button><button class="btn secondary hidden" id="logoutBtn">登出</button></div>
+<section id="resetPanel" class="hidden" style="margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f7f9fc">
+ <h2 id="resetTitle">設定新密碼</h2>
+ <p id="resetHelp" class="muted" style="font-size:13px">請輸入新密碼並再次確認。</p>
+ <div class="settings" style="grid-template-columns:repeat(2,1fr)">
+  <div class="field"><label for="newPassword">新密碼（至少 6 碼）</label><input id="newPassword" type="password" autocomplete="new-password" placeholder="輸入新密碼"></div>
+  <div class="field"><label for="confirmPassword">再次輸入新密碼</label><input id="confirmPassword" type="password" autocomplete="new-password" placeholder="再次輸入新密碼"></div>
+ </div>
+ <div class="actions"><button class="btn" id="savePasswordBtn">儲存新密碼</button><button class="btn secondary" id="cancelResetBtn" type="button">取消</button></div>
+</section>
 <p id="authMessage" class="muted" style="font-size:12px"></p></section>
 
 <section class="tabs">
@@ -129,25 +138,44 @@ document.getElementById('startBtn').onclick=start;
 ['count','difficulty','ordering'].forEach(id=>document.getElementById(id).onchange=updateAvailable);
 buildChapters();updateDashboard();updateAvailable();
 
-// Supabase cloud sync configuration. Use anon/public key only; never expose service_role.
+// Supabase cloud sync configuration. Use only the Publishable/anon key; never expose secret/service_role.
+// 請將下方兩個 YOUR_... 替換成你目前 GitHub 版本使用的 Project URL 與 Publishable key。
 const SUPABASE_URL="https://jcwlsctwdbbetkmqadsg.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_w8-eFivrbfT7AftuxjW3nA_1peavt7v";
-let sb=null,cloudUser=null,cloudTimer=null;
+let sb=null,cloudUser=null,cloudTimer=null,recoveryMode=false;
+const siteRedirect=()=>window.location.origin+window.location.pathname;
 function cloudMsg(t){document.getElementById('authMessage').textContent=t}
-function cloudConfigured(){return SUPABASE_URL.startsWith('https://')&&!SUPABASE_URL.includes('YOUR_')&&SUPABASE_ANON_KEY.length>30&&!SUPABASE_ANON_KEY.includes('YOUR_')}
+function cloudConfigured(){return SUPABASE_URL.startsWith('https://')&&!SUPABASE_URL.includes('YOUR_')&&SUPABASE_ANON_KEY.length>20&&!SUPABASE_ANON_KEY.includes('YOUR_')}
+function showResetPanel(show=true){document.getElementById('resetPanel').classList.toggle('hidden',!show);if(show){document.getElementById('resetPanel').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('newPassword').focus()}}
 async function initCloud(){
- if(!cloudConfigured()){document.getElementById('cloudStatus').textContent='待設定雲端';cloudMsg('部署前請填入 Supabase Project URL 與 anon key，並執行部署包內 SQL。');return}
+ if(!cloudConfigured()){document.getElementById('cloudStatus').textContent='待設定雲端';cloudMsg('請確認已填入 Supabase Project URL 與 Publishable key。');return}
+ if(!window.supabase?.createClient){cloudMsg('Supabase 程式載入失敗，請重新整理頁面。');return}
  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
- const {data:{session}}=await sb.auth.getSession();await setCloudSession(session);
- sb.auth.onAuthStateChange((_e,s)=>setTimeout(()=>setCloudSession(s),0));
+ // 先監聽驗證事件，讓密碼重設連結回到本站後能顯示新密碼表單。
+ sb.auth.onAuthStateChange((event,session)=>{
+  if(event==='PASSWORD_RECOVERY'){
+   recoveryMode=true;showResetPanel(true);cloudMsg('身分驗證成功，請設定新密碼。');
+  }
+  setTimeout(()=>setCloudSession(session),0);
+ });
+ const {data,error}=await sb.auth.getSession();
+ if(error){cloudMsg('讀取登入狀態失敗：'+error.message);return}
+ await setCloudSession(data.session);
+ // 若回到本站時網址帶有 recovery 類型，也顯示密碼更新區塊。
+ if(location.hash.includes('type=recovery')||new URLSearchParams(location.search).get('type')==='recovery'){
+  recoveryMode=true;showResetPanel(true);cloudMsg('請設定新密碼。');
+ }
 }
 async function setCloudSession(session){
  cloudUser=session?.user||null;
  ['registerBtn','loginBtn'].forEach(id=>document.getElementById(id).classList.toggle('hidden',!!cloudUser));
  document.getElementById('logoutBtn').classList.toggle('hidden',!cloudUser);
- document.getElementById('authEmail').disabled=!!cloudUser;document.getElementById('authPassword').disabled=!!cloudUser;
+ document.getElementById('authEmail').disabled=!!cloudUser;
+ document.getElementById('authPassword').disabled=!!cloudUser;
  if(!cloudUser){document.getElementById('cloudStatus').textContent='尚未登入';return}
- document.getElementById('cloudStatus').textContent='已登入：'+cloudUser.email;cloudMsg('正在同步學習紀錄…');
+ document.getElementById('cloudStatus').textContent='已登入：'+cloudUser.email;
+ if(recoveryMode){cloudMsg('已驗證重設身分，請輸入新密碼。');return}
+ cloudMsg('正在同步學習紀錄…');
  try{
   for(const l of ['fire','standard']){
    const {data,error}=await sb.from('user_progress').select('data').eq('user_id',cloudUser.id).eq('law',l).maybeSingle();if(error)throw error;
@@ -159,7 +187,7 @@ async function setCloudSession(session){
  }catch(e){cloudMsg('同步失敗：'+e.message)}
 }
 function queueCloudSave(){
- if(!sb||!cloudUser)return;clearTimeout(cloudTimer);
+ if(!sb||!cloudUser||recoveryMode)return;clearTimeout(cloudTimer);
  cloudTimer=setTimeout(async()=>{try{
   const data=JSON.parse(localStorage.getItem('firequiz_'+law)||'{}');
   const {error}=await sb.from('user_progress').upsert({user_id:cloudUser.id,law,data,updated_at:new Date().toISOString()},{onConflict:'user_id,law'});
@@ -168,13 +196,39 @@ function queueCloudSave(){
 }
 document.getElementById('registerBtn').onclick=async()=>{
  if(!sb)return cloudMsg('尚未設定 Supabase。');
- const email=authEmail.value.trim(),password=authPassword.value;if(!email||password.length<6)return cloudMsg('請輸入有效電子郵件及至少 6 碼密碼。');
- const {error}=await sb.auth.signUp({email,password});cloudMsg(error?error.message:'註冊請求已送出，請依設定完成電子郵件驗證。');
+ const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
+ if(!email||password.length<6)return cloudMsg('請輸入有效電子郵件及至少 6 碼密碼。');
+ const {error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:siteRedirect()}});
+ cloudMsg(error?error.message:'註冊請求已送出，請至信箱完成電子郵件驗證。');
 };
 document.getElementById('loginBtn').onclick=async()=>{
  if(!sb)return cloudMsg('尚未設定 Supabase。');
- const {error}=await sb.auth.signInWithPassword({email:authEmail.value.trim(),password:authPassword.value});cloudMsg(error?error.message:'登入成功，正在同步…');
+ const {error}=await sb.auth.signInWithPassword({email:document.getElementById('authEmail').value.trim(),password:document.getElementById('authPassword').value});
+ cloudMsg(error?error.message:'登入成功，正在同步…');
 };
+document.getElementById('forgotBtn').onclick=async()=>{
+ if(!sb)return cloudMsg('尚未設定 Supabase。');
+ const email=document.getElementById('authEmail').value.trim();
+ if(!email)return cloudMsg('請先在電子郵件欄位輸入註冊時使用的 Email。');
+ const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:siteRedirect()});
+ cloudMsg(error?'重設密碼郵件寄送失敗：'+error.message:'已提出重設密碼郵件請求。請查看收件匣及垃圾郵件匣，並使用最新一封信。');
+};
+document.getElementById('savePasswordBtn').onclick=async()=>{
+ if(!sb)return cloudMsg('尚未設定 Supabase。');
+ const password=document.getElementById('newPassword').value,confirm=document.getElementById('confirmPassword').value;
+ if(password.length<6)return cloudMsg('新密碼至少需要 6 碼。');
+ if(password!==confirm)return cloudMsg('兩次輸入的新密碼不一致，請重新確認。');
+ const {data,error}=await sb.auth.updateUser({password});
+ if(error){cloudMsg('更新密碼失敗：'+error.message);return}
+ recoveryMode=false;showResetPanel(false);
+ document.getElementById('newPassword').value='';document.getElementById('confirmPassword').value='';
+ // 更新成功後登出，讓使用者用新密碼重新登入，避免誤以為舊密碼仍有效。
+ await sb.auth.signOut();
+ cloudMsg('密碼已成功更新！請使用新密碼重新登入。');
+};
+document.getElementById('cancelResetBtn').onclick=()=>{recoveryMode=false;showResetPanel(false);cloudMsg('已關閉密碼重設畫面。')};
 document.getElementById('logoutBtn').onclick=async()=>{if(sb)await sb.auth.signOut();cloudMsg('已登出。')};
+
+// 初始化必須放在 Supabase 常數及函式宣告之後，避免尚未初始化就呼叫。
 initCloud();
 </script></body></html>
