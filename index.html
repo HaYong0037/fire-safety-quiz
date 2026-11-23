@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>消防設備士法規刷題系統</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#182230;--muted:#687587;--line:#e3e8ef;--blue:#2866b2;--blue2:#eaf2fc;--orange:#b76525;--orange2:#fff1e5;--green:#16834b;--red:#c53d3d;--shadow:0 8px 26px #1b35500c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Noto Sans TC",sans-serif}
+header{background:#14283f;color:white;padding:22px max(20px,calc((100% - 1120px)/2));}
+header h1{font-size:clamp(22px,4vw,30px);margin:0 0 4px}header p{margin:0;color:#c9d7e7}
+main{max-width:1120px;margin:24px auto;padding:0 18px 50px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.tab,.mode,.btn,.chapter{border:1px solid var(--line);background:var(--card);border-radius:13px;padding:14px;cursor:pointer;text-align:left;color:inherit;transition:.15s}
+.tab.active{border:2px solid var(--blue);background:var(--blue2)}.tab.standard.active{border-color:var(--orange);background:var(--orange2)}
+.tab strong{display:block;font-size:17px}.tab small,.muted{color:var(--muted)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+h2{font-size:19px;margin:0 0 12px}.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mode{padding:13px}.mode b{display:block;margin:3px 0}.mode span{font-size:12px;color:var(--muted)}.mode.active{border:2px solid var(--blue);background:var(--blue2)}
+.settings{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+select,input{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;background:white;color:var(--ink);font:inherit}
+.chapters{display:flex;flex-wrap:wrap;gap:8px}.chapter{padding:8px 11px;font-size:13px}.chapter.active{background:var(--blue2);border-color:var(--blue);color:var(--blue)}
+.btn{background:var(--blue);color:white;border:0;text-align:center;font-weight:650;padding:12px 18px}.btn.secondary{background:#edf1f6;color:#26384b}.btn.warn{background:#fff0ed;color:#a52d2d}.btn:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:#f7f9fc;border-radius:12px;padding:13px}.stat strong{font-size:24px;display:block}.stat small{color:var(--muted)}
+.question-head{display:flex;justify-content:space-between;gap:10px;align-items:center;color:var(--muted);font-size:13px}.progress{height:7px;background:#edf1f6;border-radius:9px;overflow:hidden;margin:10px 0 20px}.progress i{display:block;height:100%;background:var(--blue);width:0}
+.option{display:flex;align-items:flex-start;gap:10px;width:100%;padding:13px;border:1px solid var(--line);background:white;border-radius:11px;text-align:left;margin:8px 0;cursor:pointer;font:inherit;color:inherit}
+.option .letter{background:#eef2f7;border-radius:50%;width:27px;height:27px;display:grid;place-items:center;flex:none;font-weight:700}
+.option.correct{border-color:var(--green);background:#effaf4}.option.wrong{border-color:var(--red);background:#fff2f1}
+.explain{background:#f5f8fb;border-radius:12px;padding:14px;margin-top:12px}.explain b{display:block;margin-bottom:5px}
+.hidden{display:none!important}.badge{font-size:12px;background:#edf2f8;padding:4px 8px;border-radius:20px}.row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{padding:9px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted);font-weight:600}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:10px}
+@media(max-width:700px){.modes{grid-template-columns:repeat(2,1fr)}.settings{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:420px){.modes{grid-template-columns:1fr 1fr}.panel{padding:14px}}
+</style></head>
+<body>
+<header><h1>消防設備士法規刷題系統</h1><p>兩大法規分開管理・六種練習模式・錯題與學習進度追蹤</p></header>
+<main>
+
+<section class="panel" id="cloudPanel">
+<div class="row"><h2>☁️ 雲端帳號同步</h2><span class="badge" id="cloudStatus">尚未登入</span></div>
+<p class="muted" style="font-size:13px">註冊或登入後，兩部法規的成績、錯題、收藏及進度可跨設備同步。</p>
+<div class="settings" style="grid-template-columns:repeat(2,1fr)">
+<div class="field"><label>電子郵件</label><input id="authEmail" type="email" placeholder="name@example.com"></div>
+<div class="field"><label>密碼</label><input id="authPassword" type="password" placeholder="至少 6 碼"></div></div>
+<div class="actions"><button class="btn" id="registerBtn">註冊帳號</button><button class="btn secondary" id="loginBtn">登入</button><button class="btn secondary hidden" id="logoutBtn">登出</button></div>
+<p id="authMessage" class="muted" style="font-size:12px"></p></section>
+
+<section class="tabs">
+<button class="tab active" id="lawFire" onclick="setLaw('fire')">⚖️ <strong>消防法</strong><small>獨立題庫、成績與錯題紀錄</small></button>
+<button class="tab standard" id="lawStd" onclick="setLaw('standard')">🔥 <strong>各類場所消防安全設備設置標準</strong><small>獨立題庫、成績與錯題紀錄</small></button>
+</section>
+<section class="panel"><h2>選擇刷題模式</h2><div class="modes" id="modes">
+<button class="mode active" data-mode="random"><b>🔀 隨機抽題</b><span>隨機抽選、不重複出題</span></button>
+<button class="mode" data-mode="all"><b>📚 全部題目</b><span>依題庫順序完整練習</span></button>
+<button class="mode" data-mode="chapter"><b>📖 分章節練習</b><span>選擇指定章節範圍</span></button>
+<button class="mode" data-mode="wrong"><b>🔁 錯題練習</b><span>只練習曾經答錯的題目</span></button>
+<button class="mode" data-mode="exam"><b>📝 模擬考試</b><span>限時作答、交卷後看解析</span></button>
+<button class="mode" data-mode="weak"><b>🎯 弱點加強</b><span>優先練習答題正確率較低章節</span></button>
+</div></section>
+<section class="panel" id="settingPanel"><h2>練習設定</h2>
+<div class="settings">
+<div class="field"><label>每回合題數</label><select id="count"><option>10</option><option>20</option><option>30</option><option>50</option><option>100</option><option value="all">全部</option></select></div>
+<div class="field"><label>題目難度</label><select id="difficulty"><option value="all">混合難度</option><option>基礎</option><option>中等</option><option>困難</option></select></div>
+<div class="field"><label>題目排序</label><select id="ordering"><option value="random">隨機</option><option value="order">依條文順序</option></select></div>
+<div class="field"><label>解析時機</label><select id="feedback"><option value="immediate">每題立即解析</option><option value="end">交卷後統一解析</option></select></div>
+</div>
+<div id="chapterBox" class="hidden" style="margin-top:15px"><label class="muted">選擇章節（可複選）</label><div class="chapters" id="chapters"></div></div>
+<div id="timerBox" class="hidden" style="margin-top:12px" class="field"><label>模擬考時間</label><select id="minutes"><option value="30">30 分鐘</option><option value="60" selected>60 分鐘</option><option value="90">90 分鐘</option></select></div>
+<div class="actions"><button class="btn" id="startBtn">開始練習</button><span class="muted" id="available"></span></div>
+</section>
+<section class="panel"><div class="row"><h2>學習儀表板</h2><span class="badge" id="dashLaw">消防法</span></div>
+<div class="stats"><div class="stat"><strong id="attempted">0</strong><small>累計作答題次</small></div><div class="stat"><strong id="accuracy">—</strong><small>整體正確率</small></div><div class="stat"><strong id="wrongCount">0</strong><small>待複習錯題</small></div><div class="stat"><strong id="favCount">0</strong><small>收藏題目</small></div></div>
+<div style="margin-top:15px"><b>各章節熟悉程度</b><div id="chapterStats" style="margin-top:8px"></div></div>
+<div class="actions"><button class="btn secondary" onclick="showHistory()">查看歷史成績</button><button class="btn secondary" onclick="exportData()">匯出學習紀錄</button><button class="btn warn" onclick="clearProgress()">清除本法規紀錄</button></div>
+</section>
+<section class="panel hidden" id="quizPanel">
+<div class="question-head"><span id="quizMode">隨機抽題</span><span id="qNumber">第 1 題</span><span id="clock"></span></div><div class="progress"><i id="bar"></i></div>
+<div class="row"><span class="badge" id="qChapter">章節</span><button class="btn secondary" style="padding:6px 10px" id="favoriteBtn">☆ 收藏</button></div>
+<h2 id="question" style="margin-top:15px;line-height:1.6"></h2><div id="options"></div>
+<div id="explanation" class="explain hidden"></div>
+<div class="actions"><button class="btn secondary" id="prevBtn">上一題</button><button class="btn" id="nextBtn">下一題</button><button class="btn" id="submitBtn">交卷</button></div>
+<p class="muted" id="quizHint" style="font-size:12px"></p>
+</section>
+<section class="panel hidden" id="resultPanel"><h2>本回合成績</h2><div class="stats"><div class="stat"><strong id="resultScore">0</strong><small>得分</small></div><div class="stat"><strong id="resultRight">0</strong><small>答對題數</small></div><div class="stat"><strong id="resultTotal">0</strong><small>總題數</small></div><div class="stat"><strong id="resultRate">0%</strong><small>正確率</small></div></div><div id="reviewList" style="margin-top:15px"></div><div class="actions"><button class="btn" onclick="newRound()">再練一次</button><button class="btn secondary" onclick="window.scrollTo({top:0,behavior:'smooth'})">回到設定</button></div></section>
+<section class="panel hidden" id="historyPanel"><div class="row"><h2>歷史成績</h2><button class="btn secondary" onclick="hideHistory()">關閉</button></div><div id="historyRows"></div></section>
+<footer>本網站為個人學習工具示範版。內建題目為少量示範題，非官方完整題庫；正式備考請核對最新法規及考選部公告。</footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const BANK={
+fire:[
+{id:'f1',ch:'總則與主管機關',art:'第1條',d:'基礎',q:'消防法制定的主要目的為何？',o:['增加消防人員編制','預防火災、搶救災害及緊急救護','規範建築物買賣','管理所有公共工程'],a:1,e:'消防法第1條：為預防火災、搶救災害及緊急救護，以維護公共安全，確保人民生命財產。'},
+{id:'f2',ch:'總則與主管機關',art:'第2條',d:'基礎',q:'消防法所稱「管理權人」，主要是指何者？',o:['只有建築物所有權人','只有消防設備師','依法令或契約對場所具有實際支配管理權者','地方消防局局長'],a:2,e:'消防法第2條。管理權人不一定是所有權人，判斷重點在於對場所具有實際支配管理權。'},
+{id:'f3',ch:'總則與主管機關',art:'第3條',d:'基礎',q:'消防法所稱中央主管機關為何？',o:['內政部','行政院','消防署','地方政府'],a:0,e:'消防法第3條：中央主管機關為內政部；直轄市為直轄市政府；縣（市）為縣（市）政府。'},
+{id:'f4',ch:'消防安全設備',art:'第6條',d:'基礎',q:'各類場所管理權人，對其實際支配管理的場所應負何種消防安全設備責任？',o:['只需購買滅火器','設置並維護消防安全設備','只需張貼逃生圖','只需投保火災保險'],a:1,e:'消防法第6條第1項：管理權人應依規定設置並維護消防安全設備。'},
+{id:'f5',ch:'消防設備人員',art:'第7條',d:'中等',q:'依消防法第7條，消防安全設備的設計、監造原則上應由誰執行？',o:['消防設備士','建築物管理員','消防設備師','保全人員'],a:2,e:'消防法第7條：設計、監造應由消防設備師為之；測試、檢修則依規定由消防設備師或消防設備士執行。'},
+{id:'f6',ch:'消防安全設備',art:'第6條',d:'中等',q:'消防安全設備的設置與維護義務，主要由誰負責？',o:['場所管理權人','附近住戶','設備製造商','轄區派出所'],a:0,e:'消防法第6條以管理權人為主要義務主體。實際適用仍須依場所及條文規定判斷。'}
+],
+standard:[
+{id:'s1',ch:'總則與用語',art:'第1條',d:'基礎',q:'各類場所消防安全設備設置標準，係依消防法哪一條規定訂定？',o:['第1條','第3條','第6條第1項','第10條'],a:2,e:'設置標準第1條：本標準依消防法第6條第1項規定訂定。'},
+{id:'s2',ch:'總則與用語',art:'第3條',d:'中等',q:'未定國家標準或國內無法檢驗的消防安全設備，原則上應如何處理？',o:['不得使用','經中央主管機關認可後始准使用','由場所自行決定','只要廠商保證即可使用'],a:1,e:'設置標準第3條對相關設備認可設有規範，實際應依條文及認可程序辦理。'},
+{id:'s3',ch:'總則與用語',art:'第4條',d:'中等',q:'判斷複合用途建築物時，重要考量為何？',o:['只有建築物高度','各用途是否構成從屬關係及其使用型態','建築物外牆顏色','管理員人數'],a:1,e:'設置標準第4條涉及複合用途建築物及用途從屬關係的判斷，應依完整法條認定。'},
+{id:'s4',ch:'滅火設備',art:'第31條',d:'基礎',q:'滅火器設置應考量何種因素？',o:['場所招牌大小','場所火災種類及滅火效能值','員工年齡','裝潢風格'],a:1,e:'設置標準第31條規範滅火器設置，須依場所火災性質及最低滅火效能值等條件計算。'},
+{id:'s5',ch:'場所分類',art:'第12條',d:'基礎',q:'判斷場所應設置哪些消防安全設備，首先應確認什麼？',o:['場所用途及分類','場所營業額','員工年齡','招牌大小'],a:0,e:'設置標準第12條等規定依場所用途分類，並搭配各設備設置條文判斷。'},
+{id:'s6',ch:'警報設備',art:'相關條文',d:'中等',q:'檢討警報設備設置時，最應先確認哪一項？',o:['場所用途、規模及適用條文條件','室內家具品牌','場所租金','員工制服顏色'],a:0,e:'應依設置標準中各類場所用途、樓層、面積及其他適用條件逐項判斷。'}
+]};
+const CHAPTERS={fire:['總則與主管機關','消防安全設備','消防設備人員'],standard:['總則與用語','場所分類','滅火設備','警報設備']};
+let law='fire',mode='random',selectedCh=new Set(),questions=[],answers={},pos=0,timer=null,seconds=0,finished=false;
+const key=()=> 'firequiz_'+law;
+function load(){try{return JSON.parse(localStorage.getItem(key()))||{attempts:{},history:[],runs:[]}}catch{return {attempts:{},history:[],runs:[]}}}
+function save(x){localStorage.setItem(key(),JSON.stringify(x));queueCloudSave()}
+function setLaw(x){law=x;document.getElementById('lawFire').classList.toggle('active',x==='fire');document.getElementById('lawStd').classList.toggle('active',x==='standard');document.getElementById('dashLaw').textContent=x==='fire'?'消防法':'設置標準';buildChapters();updateDashboard();updateAvailable();document.getElementById('quizPanel').classList.add('hidden');document.getElementById('resultPanel').classList.add('hidden')}
+document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('active',x===b));document.getElementById('chapterBox').classList.toggle('hidden',mode!=='chapter');document.getElementById('timerBox').classList.toggle('hidden',mode!=='exam');updateAvailable()});
+function buildChapters(){let box=document.getElementById('chapters');box.innerHTML='';selectedCh=new Set(CHAPTERS[law]);CHAPTERS[law].forEach(c=>{let b=document.createElement('button');b.className='chapter active';b.textContent='✓ '+c;b.onclick=()=>{selectedCh.has(c)?selectedCh.delete(c):selectedCh.add(c);b.classList.toggle('active');b.textContent=(selectedCh.has(c)?'✓ ':'')+c;updateAvailable()};box.append(b)})}
+function pool(){let arr=[...BANK[law]],data=load();if(mode==='wrong')arr=arr.filter(q=>data.attempts[q.id]?.wrong>0 && data.attempts[q.id]?.lastCorrect===false);if(mode==='chapter')arr=arr.filter(q=>selectedCh.has(q.ch));if(mode==='weak'){let rates=CHAPTERS[law].map(c=>{let qs=BANK[law].filter(q=>q.ch===c),a=qs.reduce((n,q)=>n+(data.attempts[q.id]?.total||0),0),r=qs.reduce((n,q)=>n+(data.attempts[q.id]?.correct||0),0);return {c,rate:a?r/a:0}}).sort((a,b)=>a.rate-b.rate);let weakest=rates[0]?.c;arr=arr.filter(q=>q.ch===weakest)}let d=document.getElementById('difficulty').value;if(d!=='all')arr=arr.filter(q=>q.d===d);return arr}
+function updateAvailable(){let p=pool();document.getElementById('available').textContent=`目前符合條件：${p.length} 題`;document.getElementById('startBtn').disabled=!p.length}
+function updateDashboard(){let data=load(),ats=Object.values(data.attempts),total=ats.reduce((n,a)=>n+a.total,0),right=ats.reduce((n,a)=>n+a.correct,0),wrong=BANK[law].filter(q=>data.attempts[q.id]?.lastCorrect===false).length;document.getElementById('attempted').textContent=total;document.getElementById('accuracy').textContent=total?Math.round(right/total*100)+'%':'—';document.getElementById('wrongCount').textContent=wrong;document.getElementById('favCount').textContent=(data.favorites||[]).length;let el=document.getElementById('chapterStats');el.innerHTML='';CHAPTERS[law].forEach(c=>{let qs=BANK[law].filter(q=>q.ch===c),a=qs.reduce((n,q)=>n+(data.attempts[q.id]?.total||0),0),r=qs.reduce((n,q)=>n+(data.attempts[q.id]?.correct||0),0),pct=a?Math.round(r/a*100):0;el.innerHTML+=`<div style="margin:9px 0"><div class="row"><small>${c}</small><small>${a?pct+'%':'尚無紀錄'}</small></div><div class="progress" style="margin:4px 0"><i style="width:${pct}%"></i></div></div>`})}
+function start(){let p=pool();if(!p.length){alert('目前沒有符合條件的題目。請先作答累積錯題，或調整篩選條件。');return}let order=document.getElementById('ordering').value;if(mode==='random'||mode==='weak'||order==='random')p.sort(()=>Math.random()-.5);let n=document.getElementById('count').value;questions=n==='all'?p:p.slice(0,Math.min(+n,p.length));if(mode==='all')questions=p;answers={};pos=0;finished=false;document.getElementById('quizPanel').classList.remove('hidden');document.getElementById('resultPanel').classList.add('hidden');document.getElementById('quizMode').textContent={random:'隨機抽題',all:'全部題目',chapter:'分章節練習',wrong:'錯題練習',exam:'模擬考試',weak:'弱點加強'}[mode];if(timer)clearInterval(timer);if(mode==='exam'){seconds=+document.getElementById('minutes').value*60;timer=setInterval(()=>{seconds--;document.getElementById('clock').textContent='剩餘 '+Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');if(seconds<=0){clearInterval(timer);finish()}},1000)}else document.getElementById('clock').textContent='';renderQ();document.getElementById('quizPanel').scrollIntoView({behavior:'smooth'})}
+function renderQ(){let q=questions[pos],ans=answers[q.id],endMode=document.getElementById('feedback').value==='end'||mode==='exam';document.getElementById('qNumber').textContent=`第 ${pos+1} / ${questions.length} 題`;document.getElementById('bar').style.width=((pos+1)/questions.length*100)+'%';document.getElementById('qChapter').textContent=q.ch+'・'+q.art;document.getElementById('question').textContent=q.q;document.getElementById('options').innerHTML='';q.o.forEach((o,i)=>{let b=document.createElement('button');b.className='option';b.innerHTML=`<span class="letter">${'ABCD'[i]}</span><span>${o}</span>`;if(ans!==undefined){b.disabled=true;if(i===q.a)b.classList.add('correct');else if(i===ans)b.classList.add('wrong')}else b.onclick=()=>choose(i);document.getElementById('options').append(b)});let exp=document.getElementById('explanation');if(ans!==undefined&&!endMode){exp.classList.remove('hidden');exp.innerHTML=`<b>${ans===q.a?'✓ 答對了':'✗ 答錯了'}｜正確答案：${'ABCD'[q.a]}．${q.o[q.a]}</b>${q.e}`}else exp.classList.add('hidden');let data=load(),fav=(data.favorites||[]).includes(q.id);document.getElementById('favoriteBtn').textContent=fav?'★ 已收藏':'☆ 收藏';document.getElementById('prevBtn').disabled=pos===0;document.getElementById('nextBtn').textContent=pos===questions.length-1?'最後一題':'下一題';document.getElementById('quizHint').textContent=endMode?'本模式將於交卷後顯示答案及解析。':'選擇答案後即可查看解析。';document.getElementById('submitBtn').classList.toggle('hidden',mode!=='exam'&&pos!==questions.length-1)}
+function choose(i){let q=questions[pos];if(answers[q.id]!==undefined)return;answers[q.id]=i;let data=load(),a=data.attempts[q.id]||{total:0,correct:0,wrong:0};a.total++;if(i===q.a)a.correct++;else a.wrong++;a.lastCorrect=i===q.a;data.attempts[q.id]=a;save(data);renderQ();updateDashboard()}
+document.getElementById('favoriteBtn').onclick=()=>{let q=questions[pos],d=load();d.favorites=d.favorites||[];let i=d.favorites.indexOf(q.id);if(i<0)d.favorites.push(q.id);else d.favorites.splice(i,1);save(d);renderQ();updateDashboard()};
+document.getElementById('prevBtn').onclick=()=>{if(pos>0){pos--;renderQ()}};document.getElementById('nextBtn').onclick=()=>{if(pos<questions.length-1){pos++;renderQ()}else finish()};document.getElementById('submitBtn').onclick=finish;
+function finish(){if(finished)return;finished=true;if(timer)clearInterval(timer);let right=questions.filter(q=>answers[q.id]===q.a).length,total=questions.length,rate=Math.round(right/total*100),d=load();d.history.unshift({date:new Date().toLocaleString('zh-TW'),mode,law,correct:right,total,rate});d.history=d.history.slice(0,50);save(d);document.getElementById('resultScore').textContent=rate;document.getElementById('resultRight').textContent=right;document.getElementById('resultTotal').textContent=total;document.getElementById('resultRate').textContent=rate+'%';let html='';questions.forEach((q,i)=>{let a=answers[q.id];html+=`<div class="explain"><b>${i+1}. ${q.q}</b><div>${a===undefined?'未作答':a===q.a?'✓ 答對':'✗ 答錯'}｜正確答案：${'ABCD'[q.a]}．${q.o[q.a]}</div><small>${q.art}｜${q.e}</small></div>`});document.getElementById('reviewList').innerHTML=html;document.getElementById('resultPanel').classList.remove('hidden');document.getElementById('resultPanel').scrollIntoView({behavior:'smooth'});updateDashboard()}
+function newRound(){start()}
+function showHistory(){let d=load();document.getElementById('historyRows').innerHTML=d.history.length?'<table><thead><tr><th>時間</th><th>模式</th><th>成績</th></tr></thead><tbody>'+d.history.map(x=>`<tr><td>${x.date}</td><td>${x.mode}</td><td>${x.correct}/${x.total}（${x.rate}%）</td></tr>`).join('')+'</tbody></table>':'<p class="muted">尚無歷史成績。</p>';document.getElementById('historyPanel').classList.remove('hidden')}
+function hideHistory(){document.getElementById('historyPanel').classList.add('hidden')}
+function exportData(){let blob=new Blob([JSON.stringify({law,bank:BANK[law],progress:load()},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(law==='fire'?'消防法':'設置標準')+'_學習紀錄.json';a.click();URL.revokeObjectURL(a.href)}
+function clearProgress(){if(confirm('確定清除目前法規的所有答題紀錄、收藏與歷史成績？此操作無法復原。')){localStorage.removeItem(key());updateDashboard()}}
+document.getElementById('startBtn').onclick=start;
+['count','difficulty','ordering'].forEach(id=>document.getElementById(id).onchange=updateAvailable);
+buildChapters();updateDashboard();updateAvailable();
+initCloud();
+
+// Supabase cloud sync configuration. Use anon/public key only; never expose service_role.
+const SUPABASE_URL="https://jcwlsctwdbbetkmqadsg.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_w8-eFivrbfT7AftuxjW3nA_1peavt7v";
+let sb=null,cloudUser=null,cloudTimer=null;
+function cloudMsg(t){document.getElementById('authMessage').textContent=t}
+function cloudConfigured(){return SUPABASE_URL.startsWith('https://')&&!SUPABASE_URL.includes('YOUR_')&&SUPABASE_ANON_KEY.length>30&&!SUPABASE_ANON_KEY.includes('YOUR_')}
+async function initCloud(){
+ if(!cloudConfigured()){document.getElementById('cloudStatus').textContent='待設定雲端';cloudMsg('部署前請填入 Supabase Project URL 與 anon key，並執行部署包內 SQL。');return}
+ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+ const {data:{session}}=await sb.auth.getSession();await setCloudSession(session);
+ sb.auth.onAuthStateChange((_e,s)=>setTimeout(()=>setCloudSession(s),0));
+}
+async function setCloudSession(session){
+ cloudUser=session?.user||null;
+ ['registerBtn','loginBtn'].forEach(id=>document.getElementById(id).classList.toggle('hidden',!!cloudUser));
+ document.getElementById('logoutBtn').classList.toggle('hidden',!cloudUser);
+ document.getElementById('authEmail').disabled=!!cloudUser;document.getElementById('authPassword').disabled=!!cloudUser;
+ if(!cloudUser){document.getElementById('cloudStatus').textContent='尚未登入';return}
+ document.getElementById('cloudStatus').textContent='已登入：'+cloudUser.email;cloudMsg('正在同步學習紀錄…');
+ try{
+  for(const l of ['fire','standard']){
+   const {data,error}=await sb.from('user_progress').select('data').eq('user_id',cloudUser.id).eq('law',l).maybeSingle();if(error)throw error;
+   const local=localStorage.getItem('firequiz_'+l);
+   if(data?.data)localStorage.setItem('firequiz_'+l,JSON.stringify(data.data));
+   else if(local){const up=await sb.from('user_progress').upsert({user_id:cloudUser.id,law:l,data:JSON.parse(local),updated_at:new Date().toISOString()},{onConflict:'user_id,law'});if(up.error)throw up.error}
+  }
+  cloudMsg('同步完成！此帳號可在其他設備登入繼續練習。');updateDashboard();updateAvailable();
+ }catch(e){cloudMsg('同步失敗：'+e.message)}
+}
+function queueCloudSave(){
+ if(!sb||!cloudUser)return;clearTimeout(cloudTimer);
+ cloudTimer=setTimeout(async()=>{try{
+  const data=JSON.parse(localStorage.getItem('firequiz_'+law)||'{}');
+  const {error}=await sb.from('user_progress').upsert({user_id:cloudUser.id,law,data,updated_at:new Date().toISOString()},{onConflict:'user_id,law'});
+  if(error)throw error;cloudMsg('已同步至雲端 ✓');
+ }catch(e){cloudMsg('雲端同步失敗：'+e.message)}},600);
+}
+document.getElementById('registerBtn').onclick=async()=>{
+ if(!sb)return cloudMsg('尚未設定 Supabase。');
+ const email=authEmail.value.trim(),password=authPassword.value;if(!email||password.length<6)return cloudMsg('請輸入有效電子郵件及至少 6 碼密碼。');
+ const {error}=await sb.auth.signUp({email,password});cloudMsg(error?error.message:'註冊請求已送出，請依設定完成電子郵件驗證。');
+};
+document.getElementById('loginBtn').onclick=async()=>{
+ if(!sb)return cloudMsg('尚未設定 Supabase。');
+ const {error}=await sb.auth.signInWithPassword({email:authEmail.value.trim(),password:authPassword.value});cloudMsg(error?error.message:'登入成功，正在同步…');
+};
+document.getElementById('logoutBtn').onclick=async()=>{if(sb)await sb.auth.signOut();cloudMsg('已登出。')};
+
+</script></body></html>

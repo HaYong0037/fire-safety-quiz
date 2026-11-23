@@ -1,0 +1,9 @@
+{
+  "name": "消防設備士法規刷題系統",
+  "short_name": "消防刷題",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f6fa",
+  "theme_color": "#14283f",
+  "lang": "zh-TW"
+}
